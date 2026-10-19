@@ -34,7 +34,7 @@ async function githubRequest(path, { search = false } = {}) {
         "GitHub search rate limit reached. Please wait a minute and try again.";
     } else if (response.status === 403 || response.status === 429) {
       error.message =
-        "GitHub API rate limit reached. Add a GITHUB_TOKEN in server/.env or try again later.";
+        "GitHub API rate limit reached. Set GITHUB_TOKEN in the server environment or try again later.";
     }
 
     throw error;
