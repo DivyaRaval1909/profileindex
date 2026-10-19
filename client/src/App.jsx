@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const tabs = ["Overview", "Pull requests", "Issues", "Repositories", "Activity"];
 const statusOptions = {
@@ -143,13 +143,16 @@ function App() {
     if (savedTheme === "light" || savedTheme === "dark") return savedTheme;
     return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   });
-  const [username, setUsername] = useState("");
+  const [username, setUsername] = useState(() =>
+    new URLSearchParams(window.location.search).get("username")?.trim().replace(/^@/, "") ?? "",
+  );
   const [report, setReport] = useState(null);
   const [activeTab, setActiveTab] = useState("Overview");
   const [activeStatus, setActiveStatus] = useState("open");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [lastUsername, setLastUsername] = useState("");
+  const autoSearchStarted = useRef(false);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -160,6 +163,13 @@ function App() {
     window.localStorage.setItem("profileindex-theme", theme);
   }, [theme]);
 
+  useEffect(() => {
+    if (username && !autoSearchStarted.current) {
+      autoSearchStarted.current = true;
+      void loadProfile(username);
+    }
+  }, []);
+
   const selectedItems = useMemo(() => {
     if (!report) return [];
     if (activeTab === "Pull requests") return report.pullRequests[activeStatus]?.items ?? [];
@@ -167,9 +177,8 @@ function App() {
     return [];
   }, [report, activeTab, activeStatus]);
 
-  async function analyze(event) {
-    event.preventDefault();
-    const query = username.trim().replace(/^@/, "");
+  async function loadProfile(rawUsername) {
+    const query = rawUsername.trim().replace(/^@/, "");
     if (!query) {
       setError("Enter a GitHub username to get started.");
       return;
@@ -190,6 +199,11 @@ function App() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function analyze(event) {
+    event.preventDefault();
+    void loadProfile(username);
   }
 
   const profile = report?.profile;
